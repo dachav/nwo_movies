@@ -53,7 +53,8 @@ def get_movie_info(top_category, url, timestamp):
         genres = movie.find('span', class_="genre")
         movie_info["genres"] = None
         if genres is not None:
-            movie_info["genres"] = genres.text.strip()
+            sorted_genre_list = sorted(", ".join(genres.text.strip()))
+            movie_info["genres"] = " ,".join(sorted_genre_list)
 
         nv_element = movie.select('span[name=nv]')
         movie_info["num_votes"] = None
@@ -70,8 +71,11 @@ def get_movie_info(top_category, url, timestamp):
 
         directors = list(set(directors_and_actors) - set(actors))
 
-        movie_info["actors"] = ", ".join([actor.text for actor in actors])
-        movie_info["directors"] = ", ".join([director.text for director in directors])
+        sorted_actor_list = sorted([actor.text for actor in actors])
+        sorted_director_list = sorted([director.text for director in directors])
+
+        movie_info["actors"] = ", ".join(sorted_actor_list)
+        movie_info["directors"] = ", ".join(sorted_director_list)
 
         summary = movie.select('div.ratings-bar + p')
         movie_info["summary"] = summary[0].text.strip()
