@@ -10,12 +10,13 @@ import load
 def ingest_new_staging_data():
     raw_data_df = util.read_all_csv_to_df(config.RAW_DATA_PATH)
     staging_table_df = transform.create_staging_table(raw_data_df)
-    util.ingest_append_data(staging_table_df, config.CONNECTION_STRING, "movie_performance_staging")
+    util.ingest_df_into_sql(staging_table_df, config.CONNECTION_STRING, "movie_performance_staging", "replace")
 
 
 def main():
     new_data_pull = input("Export new top 50 data?: (y or n) ")
     if new_data_pull == 'y':
+        util.create_folder_if_missing(config.RAW_DATA_PATH)
         util.remove_files(config.RAW_DATA_PATH + "/*")
         extract.export_archived_file()
 

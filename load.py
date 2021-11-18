@@ -101,8 +101,8 @@ def get_new_movie_dim(conn_str):
 
 
 def create_new_dim_tables(conn_str):
-    util.ingest_append_data(get_new_time_dim(conn_str), conn_str, "day_dim")
-    util.ingest_append_data(get_new_movie_dim(conn_str), conn_str, "movie_dim")
+    util.ingest_df_into_sql(get_new_time_dim(conn_str), conn_str, "day_dim", "append")
+    util.ingest_df_into_sql(get_new_movie_dim(conn_str), conn_str, "movie_dim", "append")
 
 
 def populate_day_key_staging_table(conn_str):
@@ -154,7 +154,7 @@ def populate_movie_fact_table(conn_str):
                 movie_performance_staging
         """, con=engine)
 
-    util.ingest_append_data(populated_fact_staging_df, conn_str, "movie_performance_fact")
+    util.ingest_df_into_sql(populated_fact_staging_df, conn_str, "movie_performance_fact", "append")
 
 
 def populate_schema(conn_str):
