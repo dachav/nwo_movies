@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -7,18 +8,16 @@ from bs4 import BeautifulSoup
 import movies
 
 
-def get_category_urls():
-    # Parse the html content
-    category_url = "https://www.imdb.com/feature/genre?ref_=fn_asr_ge/"
-
+def get_category_urls(genre_url):
     data = {}
     # Make a GET request to fetch the raw HTML content
-    html_content = requests.get(category_url).text
+    html_content = requests.get(genre_url).text
+    genre_url_array = urlparse(genre_url)
     soup = BeautifulSoup(html_content, "lxml")
     div = soup.select("a[name=slot_right-4] + div")
 
     for a in div[0].find_all('a', href=True):
-        data[a.text.strip()] = "".join(["https://www.imdb.com", a['href']])
+        data[a.text.strip()] = "".join(["https://", genre_url_array.netloc, a['href']])
     return data
 
 
@@ -96,10 +95,10 @@ def get_movie_info(top_category, url, timestamp):
     return data
 
 
-def export_archived_file():
+def export_archived_file(genre_url):
     # write a pandas dataframe to gzipped CSV file
     movies_list = []
-    categories = get_category_urls()
+    categories = get_category_urls(genre_url)
     timestamp = datetime.utcnow()
     for k, v in categories.items():
         movies_list = movies_list + get_movie_info(k, v, timestamp)

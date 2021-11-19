@@ -16,9 +16,9 @@ def ingest_new_staging_data():
 def main():
     new_data_pull = input("Export new top 50 data?: (y or n) ")
     if new_data_pull == 'y':
-        util.create_folder_if_missing(config.RAW_DATA_PATH)
-        util.remove_files(config.RAW_DATA_PATH + "/*")
-        extract.export_archived_file()
+        util.create_folders_if_missing([config.RAW_DATA_PATH, config.RAW_DATA_ARCHIVE_PATH])
+        util.archive_old_files(config.RAW_DATA_PATH, config.RAW_DATA_ARCHIVE_PATH)
+        extract.export_archived_file(config.IMDB_GENRE_URL)
 
     update_staging = input("Update staging table?: (y or n) ")
     if update_staging == 'y':
@@ -30,6 +30,6 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='./logs/logging.log', level=logging.INFO)
+    logging.basicConfig(filename='./logging.log', level=logging.INFO)
     logging.info('Started')
     main()
