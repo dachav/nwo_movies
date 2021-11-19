@@ -4,7 +4,7 @@ class Movie(object):
     def __init__(self, movie_obj, datetime):
         self.title = movie_obj["title"]
         self.url = movie_obj["url"]
-        self.rank = movie_obj["rank"]
+        self.imdb_rank = movie_obj["imdb_rank"]
         self.release_year = movie_obj["release_year"]
         self.mpaa_rating = movie_obj["mpaa_rating"]
         self.runtime_minutes = movie_obj["runtime_minutes"]

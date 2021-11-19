@@ -30,9 +30,7 @@ def clean_release_year(row):
     return int(re.sub("[^0-9]", "", row["release_year"]))
 
 
-def create_staging_table(raw_df):
-    # read compressed csv file
-    raw_movie_df = util.read_all_csv_to_df("./raw_data")
+def create_staging_table(raw_movie_df):
     # instantiate movie performance staging class
     movie_perf_raw = MoviePerformanceStaging(raw_movie_df)
     # transform time dimensions
@@ -49,7 +47,10 @@ def create_staging_table(raw_df):
 
 class MoviePerformanceStaging(object):
     def __init__(self, df: pd.DataFrame):
-        self.staging_df = df
+        self.staging_df = df.groupby(['title', 'url', 'release_year', 'mpaa_rating', 'runtime_minutes',
+                                      'genres', 'imdb_rating', 'metascore_rating', 'actors', 'directors',
+                                      'summary', 'num_votes', 'gross_earnings',
+                                      'timestamp'])['imdb_rank'].apply(','.join).reset_index()
 
     def transform_time_dimensions(self):
         self.staging_df["day_key"] = np.nan
@@ -94,7 +95,7 @@ class MoviePerformanceStaging(object):
         return self
 
     def remove_unneeded_columns(self):
-        cols_to_remove = ["url", "rank", "genres", "actors", "directors"]
+        cols_to_remove = ["url", "genres", "actors", "directors"]
         for col in cols_to_remove:
             self.staging_df.drop(col, inplace=True, axis=1)
 

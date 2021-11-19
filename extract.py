@@ -37,7 +37,7 @@ def get_movie_info(top_category, url, timestamp):
 
         movie_info["title"] = header.find('a').text
         movie_info["url"] = header.find('a')['href']
-        movie_info["rank"] = {top_category: header.find('span', class_="lister-item-index").text.replace(".", "")}
+        movie_info["imdb_rank"] = {top_category: header.find('span', class_="lister-item-index").text.replace(".", "")}
         movie_info["release_year"] = header.find('span', class_="lister-item-year").text
 
         mpaa_rating = movie.find('span', class_="certificate")
