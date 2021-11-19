@@ -1,7 +1,11 @@
+import logging
+
 import pandas as pd
 from sqlalchemy import create_engine
 
 import util
+
+log = logging.getLogger(__name__)
 
 
 def get_new_time_dim(conn_str):
@@ -97,16 +101,16 @@ def create_new_dim_values(conn_str):
     new_movie_dim = get_new_movie_dim(conn_str)
 
     if new_time_dim.empty:
-        print("No data added to day_dim")
+        log.warning("No data added to day_dim")
     else:
         util.ingest_df_into_sql(new_time_dim, conn_str, "day_dim", "append")
-        print("Added data to day_dim")
+        log.info("Added data to day_dim")
 
     if new_movie_dim.empty:
-        print("No data added to movie_dim")
+        log.warning("No data added to movie_dim")
     else:
         util.ingest_df_into_sql(new_movie_dim, conn_str, "movie_dim", "append")
-        print("Added data to movie_dim")
+        log.info("Added data to movie_dim")
 
 
 def populate_day_key_staging_table(conn_str):
@@ -123,7 +127,7 @@ def populate_day_key_staging_table(conn_str):
 
     util.run_crud_operation(conn_str, sql_statement)
 
-    print("Done populating day_key in staging")
+    log.info("Populated day_key in staging")
 
 
 def populate_movie_key_staging_table(conn_str):
@@ -140,7 +144,7 @@ def populate_movie_key_staging_table(conn_str):
 
     util.run_crud_operation(conn_str, sql_statement)
 
-    print("Done populating movie_key in staging")
+    log.info("Populated movie_key in staging")
 
 
 def get_movie_key_for_delta(conn_str):
@@ -193,9 +197,9 @@ def populate_movie_fact_table(conn_str):
         formatted_sql_query = sql_query.format("WHERE movie_key IN (" + ",".join(get_movie_key_for_delta(conn_str)) + ")")
         populated_fact_staging_df = pd.read_sql_query(formatted_sql_query, con=engine)
         util.ingest_df_into_sql(populated_fact_staging_df, conn_str, "movie_performance_fact", "append")
-        print("Movie performance fact table populated!")
+        log.info("Movie performance fact table populated!")
     else:
-        print("No new facts populated")
+        log.warning("No new facts populated")
 
 
 def populate_schema(conn_str):

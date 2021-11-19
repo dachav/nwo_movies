@@ -6,6 +6,8 @@ import shutil
 import pandas as pd
 from sqlalchemy import create_engine, exc
 
+log = logging.getLogger(__name__)
+
 
 def read_all_csv_to_df(path):
     all_files = glob.glob(path + "/*.csv.gz")
@@ -21,10 +23,11 @@ def read_all_csv_to_df(path):
 def ingest_df_into_sql(df, conn_str, table_name, action_if_exists):
     try:
         engine = create_engine(conn_str)
-        df.to_sql(table_name, engine, index=False)
-    except exc.SQLAlchemyError as e:
-        logging.error("df: %s connection string: %s table name: %s action: %s Error: %s"
-                      % (df, conn_str, table_name, action_if_exists, e))
+        df.to_sql(table_name, engine, if_exists=action_if_exists, index=False)
+    except (exc.SQLAlchemyError, BaseException) as e:
+        log.error("df: %s connection string: %s table name: %s action: %s Error: %s"
+                  % (df, conn_str, table_name, action_if_exists, e))
+        raise
 
 
 def run_crud_operation(conn_str, stmt):
@@ -34,7 +37,7 @@ def run_crud_operation(conn_str, stmt):
         conn.execute(stmt)
         conn.close()
     except exc.SQLAlchemyError as e:
-        logging.error("connection string: %s statement: %s Error: %s" % (conn_str, stmt, e))
+        log.error("connection string: %s statement: %s Error: %s" % (conn_str, stmt, e))
         raise
 
 
@@ -45,7 +48,7 @@ def archive_old_files(source_dir, target_dir):
         for file_name in file_names:
             shutil.move(os.path.join(source_dir, file_name), target_dir)
     except (shutil.Error, OSError) as e:
-        logging.error("source: %s target: %s Error: %s" % (source_dir, target_dir, e.strerror))
+        log.error("source: %s target: %s Error: %s" % (source_dir, target_dir, e.strerror))
         raise
 
 
@@ -58,7 +61,7 @@ def create_folders_if_missing(paths):
             if not is_exist:
                 # Create a new directory because it does not exist
                 os.makedirs(path)
-                print("The new directory is created!")
+                log.info("The new directory %s is created!") % path
         except OSError as e:
-            logging.error("path: %s Error: %s" % (path, e.strerror))
+            log.error("path: %s Error: %s" % (path, e.strerror))
             raise

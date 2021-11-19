@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -6,6 +7,9 @@ import requests
 from bs4 import BeautifulSoup
 
 import movies
+import util
+
+log = logging.getLogger(__name__)
 
 
 def get_category_urls(genre_url):
@@ -95,7 +99,11 @@ def get_movie_info(top_category, url, timestamp):
     return data
 
 
-def export_archived_file(genre_url):
+def export_archived_file(genre_url, path, archive_path):
+    # create folders for files
+    util.create_folders_if_missing([path, archive_path])
+    # archiving old files
+    util.archive_old_files(path, archive_path)
     # write a pandas dataframe to gzipped CSV file
     movies_list = []
     categories = get_category_urls(genre_url)
@@ -105,5 +113,11 @@ def export_archived_file(genre_url):
 
     movies_df = pd.DataFrame.from_records([m.to_dict() for m in movies_list])
     file_created_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    movies_df.to_csv(f"./raw_data/top50movies{file_created_time}.csv.gz", index=False, compression='gzip')
-    print("Done!")
+
+    try:
+        movies_df.to_csv(f"./raw_data/top50movies{file_created_time}.csv.gz", index=False, compression='gzip')
+        log.info("zipped file created")
+    except BaseException as e:
+        log.error("df: %s Error: %s" % (movies_df, e))
+
+

@@ -1,11 +1,13 @@
+import logging
 import re
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from tabulate import tabulate
 
 import util
+
+log = logging.getLogger(__name__)
 
 
 def get_quarter_code(row):
@@ -42,7 +44,16 @@ def create_staging_table(raw_movie_df):
     # remove elements that are not needed
     movie_pref_staging = movie_perf_time_movie_fact.remove_unneeded_columns()
 
+    log.info("Staging transformations completed")
+
     return movie_pref_staging.staging_df
+
+
+def ingest_new_staging_data(path, conn_str):
+    raw_data_df = util.read_all_csv_to_df(path)
+    staging_table_df = create_staging_table(raw_data_df)
+    util.ingest_df_into_sql(staging_table_df, conn_str, "movie_performance_staging", "fail")
+    log.info("Staging data is loaded")
 
 
 class MoviePerformanceStaging(object):

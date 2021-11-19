@@ -1,35 +1,28 @@
-import logging
-
 import config
 import extract
-import util
+import logging_config
 import transform
 import load
 
 
-def ingest_new_staging_data():
-    raw_data_df = util.read_all_csv_to_df(config.RAW_DATA_PATH)
-    staging_table_df = transform.create_staging_table(raw_data_df)
-    util.ingest_df_into_sql(staging_table_df, config.CONNECTION_STRING, "movie_performance_staging", "replace")
-
-
 def main():
-    new_data_pull = input("Export new top 50 data?: (y or n) ")
+    new_data_pull = input("\nExport new top 50 data?: (y or n) ")
+    log.info("user input to export top 50: %s" % new_data_pull)
     if new_data_pull == 'y':
-        util.create_folders_if_missing([config.RAW_DATA_PATH, config.RAW_DATA_ARCHIVE_PATH])
-        util.archive_old_files(config.RAW_DATA_PATH, config.RAW_DATA_ARCHIVE_PATH)
-        extract.export_archived_file(config.IMDB_GENRE_URL)
+        extract.export_archived_file(config.IMDB_GENRE_URL, config.RAW_DATA_PATH, config.RAW_DATA_ARCHIVE_PATH)
 
-    update_staging = input("Update staging table?: (y or n) ")
+    update_staging = input("\nUpdate staging table?: (y or n) ")
+    log.info("user input to update staging: %s" % update_staging)
     if update_staging == 'y':
-        ingest_new_staging_data()
+        transform.ingest_new_staging_data(config.RAW_DATA_PATH, config.CONNECTION_STRING)
 
-    populate_schema = input("Populate schema?: (y or n) ")
+    populate_schema = input("\nPopulate schema?: (y or n) ")
+    log.info("user input to populate schema: %s" % populate_schema)
     if populate_schema == 'y':
         load.populate_schema(config.CONNECTION_STRING)
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='./logging.log', level=logging.INFO)
-    logging.info('Started')
+    log = logging_config.configure_logger("default", "logging.log")
+    log.info("program start")
     main()
