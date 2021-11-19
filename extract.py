@@ -53,8 +53,8 @@ def get_movie_info(top_category, url, timestamp):
         genres = movie.find('span', class_="genre")
         movie_info["genres"] = None
         if genres is not None:
-            sorted_genre_list = sorted(", ".join(genres.text.strip()))
-            movie_info["genres"] = " ,".join(sorted_genre_list)
+            sorted_genre_list = sorted(genres.text.strip().split(", "))
+            movie_info["genres"] = ", ".join(sorted_genre_list)
 
         nv_element = movie.select('span[name=nv]')
         movie_info["num_votes"] = None
