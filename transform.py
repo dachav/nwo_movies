@@ -21,18 +21,11 @@ def get_quarter_code(row):
         return 4
 
 
-def flatten_column(col, base_col_name):
-    col_expanded = col.str.split(', ', expand=True)
-    col_expanded.columns = [base_col_name + str(i + 1) for i in col_expanded.columns]
-
-    return col_expanded
-
-
 def clean_release_year(row):
     return int(re.sub("[^0-9]", "", row["release_year"]))
 
 
-def create_staging_table_df(raw_movie_df):
+def transform_staging_table(raw_movie_df):
     # instantiate movie performance staging class
     movie_perf_raw = MoviePerformanceStaging(raw_movie_df)
     # transform time dimensions
@@ -46,16 +39,16 @@ def create_staging_table_df(raw_movie_df):
 
     log.info("Staging transformations completed")
 
-    return movie_pref_staging.staging_df
+    return movie_pref_staging
 
 
 def ingest_new_staging_data(path, conn_str):
     # read gzip csv from folder
     raw_data_df = util.read_all_csv_to_df(path)
     # transform raw data
-    staging_table_df = create_staging_table_df(raw_data_df)
+    staging_table_obj = transform_staging_table(raw_data_df)
     # insert transformed data into staging (replaces old data)
-    util.ingest_df_into_sql(staging_table_df, conn_str, "movie_performance_staging", "replace")
+    util.ingest_df_into_sql(staging_table_obj.staging_df, conn_str, "movie_performance_staging", "replace")
     log.info("Staging data is loaded")
 
 
