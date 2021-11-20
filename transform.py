@@ -58,7 +58,7 @@ class MoviePerformanceStaging(object):
         self.staging_df = df.groupby(['title', 'url', 'release_year', 'mpaa_rating', 'runtime_minutes',
                                       'genres', 'imdb_rating', 'metascore_rating', 'actors', 'directors',
                                       'summary', 'num_votes', 'gross_earnings',
-                                      'timestamp'])['imdb_rank'].apply(','.join).reset_index()
+                                      'timestamp'], dropna=False).agg({'imdb_rank': ','.join}).reset_index()
 
     def transform_time_dimensions(self):
         self.staging_df["day_key"] = np.nan
