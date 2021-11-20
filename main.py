@@ -1,8 +1,8 @@
 import config
 import extract
-import logging_config
 import transform
 import load
+from log import logging_config
 
 
 def main():
@@ -27,6 +27,6 @@ def main():
 
 if __name__ == '__main__':
     # instantiate logger with config
-    log = logging_config.configure_logger("default", "logging.log")
+    log = logging_config.configure_logger("default", "./log/movie_log.log")
     log.info("program start")
     main()
