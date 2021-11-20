@@ -43,7 +43,7 @@ $ python main.py
 After running the code, you can view data with Adminer at http://localhost:8080 or use another software. Login with the following credentials:
 ```
 System : PostgreSQL
-Server : postgres
+Server : postgres (localhost:5438)
 Username : root
 Password : changeme
 Database : moviesdb
