@@ -1,16 +1,12 @@
 import logging
 
-import pandas as pd
-from sqlalchemy import create_engine
-
 import util
 
 log = logging.getLogger(__name__)
 
 
 def get_new_time_dim(conn_str):
-    engine = create_engine(conn_str)
-    new_time_dim_df = pd.read_sql_query("""
+    new_time_dim_query = """
         SELECT DISTINCT 
             capture_date,
             month_code,
@@ -26,40 +22,22 @@ def get_new_time_dim(conn_str):
             year
         FROM
             day_dim
-    """, con=engine)
-
-    return new_time_dim_df
+    """
+    return util.read_sql_into_df(conn_str, new_time_dim_query)
 
 
 def get_new_movie_dim(conn_str):
-    engine = create_engine(conn_str)
-    new_movie_dim_df = pd.read_sql_query("""
+    new_movie_dim_query = """
         SELECT DISTINCT 
             imdb_id,
             title,
             release_year,
             runtime_minutes,
             mpaa_rating,
-            genre1,
-            genre2,
-            genre3,
+            genres,
             summary,
-            actor1,
-            actor2,
-            actor3,
-            actor4,
-            director1,
-            director2,
-            director3,
-            director4,
-            director5,
-            director6,
-            director7,
-            director8,
-            director9,
-            director10,
-            director11,
-            director12
+            actors,
+            directors
         FROM
             movie_performance_staging
         EXCEPT
@@ -69,42 +47,29 @@ def get_new_movie_dim(conn_str):
             release_year,
             runtime_minutes,
             mpaa_rating,
-            genre1,
-            genre2,
-            genre3,
+            genres,
             summary,
-            actor1,
-            actor2,
-            actor3,
-            actor4,
-            director1,
-            director2,
-            director3,
-            director4,
-            director5,
-            director6,
-            director7,
-            director8,
-            director9,
-            director10,
-            director11,
-            director12
+            actors,
+            directors
         FROM
             movie_dim
-    """, con=engine)
+    """
 
-    return new_movie_dim_df
+    return util.read_sql_into_df(conn_str, new_movie_dim_query)
 
 
-def create_new_dim_values(conn_str):
+def create_new_time_dim_values(conn_str):
     new_time_dim = get_new_time_dim(conn_str)
-    new_movie_dim = get_new_movie_dim(conn_str)
 
     if new_time_dim.empty:
         log.warning("No data added to day_dim")
     else:
         util.ingest_df_into_sql(new_time_dim, conn_str, "day_dim", "append")
         log.info("Added data to day_dim")
+
+
+def create_new_movie_dim_values(conn_str):
+    new_movie_dim = get_new_movie_dim(conn_str)
 
     if new_movie_dim.empty:
         log.warning("No data added to movie_dim")
@@ -148,8 +113,7 @@ def populate_movie_key_staging_table(conn_str):
 
 
 def get_movie_key_for_delta(conn_str):
-    engine = create_engine(conn_str)
-    delta_df = pd.read_sql_query("""
+    delta_query = """
                 SELECT DISTINCT 
                     movie_key,
                     imdb_rank,
@@ -169,13 +133,15 @@ def get_movie_key_for_delta(conn_str):
                     num_votes
                 FROM
                     movie_performance_fact
-            """, con=engine)
+            """
+    delta_df = util.read_sql_into_df(conn_str, delta_query)
+    # read as float so converting to int
     movie_key_int_list = delta_df["movie_key"].astype(int).to_list()
+    # returning a string list for use in query
     return [str(m) for m in movie_key_int_list]
 
 
-def populate_movie_fact_table(conn_str):
-    engine = create_engine(conn_str)
+def populate_movie_fact_table(conn_str, movie_keys):
     sql_query = """
         SELECT DISTINCT 
             day_key,
@@ -190,20 +156,29 @@ def populate_movie_fact_table(conn_str):
             movie_performance_staging
         {0}
         """
-
-    movie_key_list = get_movie_key_for_delta(conn_str)
-
-    if movie_key_list:
-        formatted_sql_query = sql_query.format("WHERE movie_key IN (" + ",".join(get_movie_key_for_delta(conn_str)) + ")")
-        populated_fact_staging_df = pd.read_sql_query(formatted_sql_query, con=engine)
-        util.ingest_df_into_sql(populated_fact_staging_df, conn_str, "movie_performance_fact", "append")
-        log.info("Movie performance fact table populated!")
-    else:
-        log.warning("No new facts populated")
+    # adds where clause to include only delta
+    formatted_sql_query = sql_query.format("WHERE movie_key IN (" + ",".join(movie_keys) + ")")
+    # read into df and ingest into table
+    populated_fact_staging_df = util.read_sql_into_df(conn_str, formatted_sql_query)
+    util.ingest_df_into_sql(populated_fact_staging_df, conn_str, "movie_performance_fact", "append")
+    log.info("Movie performance fact table populated")
 
 
 def populate_schema(conn_str):
-    create_new_dim_values(conn_str)
-    populate_day_key_staging_table(conn_str)
+    # create new movie dimensions if there is any new movies
+    create_new_movie_dim_values(conn_str)
+    # populate staging table with movie_key
     populate_movie_key_staging_table(conn_str)
-    populate_movie_fact_table(conn_str)
+    # check if the movie data has changed
+    movie_key_list = get_movie_key_for_delta(conn_str)
+    # if changed
+    if movie_key_list:
+        # add time dimensions if theres any new days
+        create_new_time_dim_values(conn_str)
+        # populate staging table with the day_key
+        populate_day_key_staging_table(conn_str)
+        # add delta from staging to fact table
+        populate_movie_fact_table(conn_str, movie_key_list)
+    # if no change do not add anything to fact table
+    else:
+        log.warning("No new facts populated")

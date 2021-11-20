@@ -14,12 +14,18 @@ log = logging.getLogger(__name__)
 
 def get_category_urls(genre_url):
     data = {}
-    # Make a GET request to fetch the raw HTML content
-    html_content = requests.get(genre_url).text
+    try:
+        # Make a GET request to fetch the raw HTML content
+        html_content = requests.get(genre_url).text
+    except requests.exceptions.RequestException as e:
+        log.error("url: %s Error: %s" % (genre_url, e.strerror))
+        raise
+
     genre_url_array = urlparse(genre_url)
     soup = BeautifulSoup(html_content, "lxml")
     div = soup.select("a[name=slot_right-4] + div")
 
+    # get the category urls for the top 50 list
     for a in div[0].find_all('a', href=True):
         data[a.text.strip()] = "".join(["https://", genre_url_array.netloc, a['href']])
     return data
@@ -27,15 +33,21 @@ def get_category_urls(genre_url):
 
 def get_movie_info(top_category, url, timestamp):
     data = []
-    # Make a GET request to fetch the raw HTML content
-    html_content = requests.get(url).text
+    try:
+        # Make a GET request to fetch the raw HTML content
+        html_content = requests.get(url).text
+    except requests.exceptions.RequestException as e:
+        log.error("url: %s Error: %s" % (url, e.strerror))
+        raise
+
     soup = BeautifulSoup(html_content, "lxml")
     movie_list = soup.select("div .lister-item-content")
 
     # Iterate through each movie section
     for movie in movie_list:
-
+        # dict to hold movie info
         movie_info = {}
+        # selecting header element
         header = movie.find('h3', class_="lister-item-header")
 
         movie_info["title"] = header.find('a').text
@@ -57,7 +69,7 @@ def get_movie_info(top_category, url, timestamp):
         movie_info["genres"] = None
         if genres is not None:
             sorted_genre_list = sorted(genres.text.strip().split(", "))
-            movie_info["genres"] = ", ".join(sorted_genre_list)
+            movie_info["genres"] = sorted_genre_list
 
         nv_element = movie.select('span[name=nv]')
         movie_info["num_votes"] = None
@@ -72,13 +84,14 @@ def get_movie_info(top_category, url, timestamp):
         directors_and_actors = bottom_row[0].select("p > a")
         actors = bottom_row[0].select("span ~ a")
 
+        # finding the directors by removing actors from list
         directors = list(set(directors_and_actors) - set(actors))
 
         sorted_actor_list = sorted([actor.text for actor in actors])
         sorted_director_list = sorted([director.text for director in directors])
 
-        movie_info["actors"] = ", ".join(sorted_actor_list)
-        movie_info["directors"] = ", ".join(sorted_director_list)
+        movie_info["actors"] = sorted_actor_list
+        movie_info["directors"] = sorted_director_list
 
         summary = movie.select('div.ratings-bar + p')
         movie_info["summary"] = summary[0].text.strip()
@@ -104,18 +117,20 @@ def export_archived_file(genre_url, path, archive_path):
     util.create_folders_if_missing([path, archive_path])
     # archiving old files
     util.archive_old_files(path, archive_path)
-    # write a pandas dataframe to gzipped CSV file
+    # combine all category data into a single dataframe
     movies_list = []
     categories = get_category_urls(genre_url)
     timestamp = datetime.utcnow()
     for k, v in categories.items():
         movies_list = movies_list + get_movie_info(k, v, timestamp)
 
+    # write a pandas dataframe to gzipped CSV file
     movies_df = pd.DataFrame.from_records([m.to_dict() for m in movies_list])
     file_created_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+    file_name = f"{path}/top50movies{file_created_time}.csv.gz"
 
     try:
-        movies_df.to_csv(f"./raw_data/top50movies{file_created_time}.csv.gz", index=False, compression='gzip')
+        movies_df.to_csv(file_name, index=False, compression='gzip')
         log.info("zipped file created")
     except BaseException as e:
         log.error("df: %s Error: %s" % (movies_df, e))

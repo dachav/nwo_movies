@@ -32,7 +32,7 @@ def clean_release_year(row):
     return int(re.sub("[^0-9]", "", row["release_year"]))
 
 
-def create_staging_table(raw_movie_df):
+def create_staging_table_df(raw_movie_df):
     # instantiate movie performance staging class
     movie_perf_raw = MoviePerformanceStaging(raw_movie_df)
     # transform time dimensions
@@ -50,14 +50,18 @@ def create_staging_table(raw_movie_df):
 
 
 def ingest_new_staging_data(path, conn_str):
+    # read gzip csv from folder
     raw_data_df = util.read_all_csv_to_df(path)
-    staging_table_df = create_staging_table(raw_data_df)
-    util.ingest_df_into_sql(staging_table_df, conn_str, "movie_performance_staging", "fail")
+    # transform raw data
+    staging_table_df = create_staging_table_df(raw_data_df)
+    # insert transformed data into staging (replaces old data)
+    util.ingest_df_into_sql(staging_table_df, conn_str, "movie_performance_staging", "replace")
     log.info("Staging data is loaded")
 
 
 class MoviePerformanceStaging(object):
     def __init__(self, df: pd.DataFrame):
+        # combine movies that were in different top 50 genre lists
         self.staging_df = df.groupby(['title', 'url', 'release_year', 'mpaa_rating', 'runtime_minutes',
                                       'genres', 'imdb_rating', 'metascore_rating', 'actors', 'directors',
                                       'summary', 'num_votes', 'gross_earnings',
@@ -81,13 +85,6 @@ class MoviePerformanceStaging(object):
 
         self.staging_df["imdb_id"] = self.staging_df.apply(lambda row: row.url.split("/")[2], axis=1)
 
-        self.staging_df \
-            = pd.concat([self.staging_df, flatten_column(self.staging_df["genres"], "genre")], axis=1)
-        self.staging_df \
-            = pd.concat([self.staging_df, flatten_column(self.staging_df["actors"], "actor")], axis=1)
-        self.staging_df \
-            = pd.concat([self.staging_df, flatten_column(self.staging_df["directors"], "director")], axis=1)
-
         self.staging_df["runtime_minutes"] = pd.to_numeric(self.staging_df["runtime_minutes"].str.replace(" min", ""),
                                                            errors='coerce')
 
@@ -106,7 +103,7 @@ class MoviePerformanceStaging(object):
         return self
 
     def remove_unneeded_columns(self):
-        cols_to_remove = ["url", "genres", "actors", "directors"]
+        cols_to_remove = ["url"]
         for col in cols_to_remove:
             self.staging_df.drop(col, inplace=True, axis=1)
 

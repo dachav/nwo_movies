@@ -41,11 +41,22 @@ def run_crud_operation(conn_str, stmt):
         raise
 
 
+def read_sql_into_df(conn_str, query):
+    try:
+        engine = create_engine(conn_str)
+        return pd.read_sql_query(query, con=engine)
+    except BaseException as e:
+        log.error("connection string: %s query: %s Error: %s" % (conn_str, query, e))
+        raise
+
+
 def archive_old_files(source_dir, target_dir):
     try:
+        # list all files in source directory
         file_names = os.listdir(source_dir)
 
         for file_name in file_names:
+            # Moves files from source to target
             shutil.move(os.path.join(source_dir, file_name), target_dir)
     except (shutil.Error, OSError) as e:
         log.error("source: %s target: %s Error: %s" % (source_dir, target_dir, e.strerror))
