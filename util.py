@@ -73,7 +73,7 @@ def create_folders_if_missing(paths):
             if not is_exist:
                 # Create a new directory because it does not exist
                 os.makedirs(path)
-                log.info("The new directory %s is created!") % path
+                log.info("The new directory %s is created!" % path)
         except OSError as e:
             log.error("path: %s Error: %s" % (path, e.strerror))
             raise
