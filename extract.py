@@ -50,29 +50,36 @@ def get_movie_info(top_category, url, timestamp):
         # selecting header element
         header = movie.find('h3', class_="lister-item-header")
 
+        # rest of function is web scraping element by html tag and css selector
         movie_info["title"] = header.find('a').text
         movie_info["url"] = header.find('a')['href']
+        # remove period after rank
         movie_info["imdb_rank"] = {top_category: header.find('span', class_="lister-item-index").text.replace(".", "")}
         movie_info["release_year"] = header.find('span', class_="lister-item-year").text
 
         mpaa_rating = movie.find('span', class_="certificate")
+        # setting default case to None
         movie_info["mpaa_rating"] = None
         if mpaa_rating is not None:
             movie_info["mpaa_rating"] = mpaa_rating.text
 
         runtime_minutes = movie.find('span', class_="runtime")
+        # setting default case to None
         movie_info["runtime_minutes"] = None
         if runtime_minutes is not None:
             movie_info["runtime_minutes"] = runtime_minutes.text.strip()
 
         genres = movie.find('span', class_="genre")
+        # setting default case to None
         movie_info["genres"] = None
         if genres is not None:
             sorted_genre_list = sorted(genres.text.strip().split(", "))
             movie_info["genres"] = sorted_genre_list
 
         nv_element = movie.select('span[name=nv]')
+        # setting default case to None
         movie_info["num_votes"] = None
+        # setting default case to None
         movie_info["gross_earnings"] = None
         if nv_element:
             movie_info["num_votes"] = nv_element[0]['data-value']
@@ -87,6 +94,7 @@ def get_movie_info(top_category, url, timestamp):
         # finding the directors by removing actors from list
         directors = list(set(directors_and_actors) - set(actors))
 
+        # sorting list to help keep order the same for separate extracts
         sorted_actor_list = sorted([actor.text for actor in actors])
         sorted_director_list = sorted([director.text for director in directors])
 
@@ -97,15 +105,18 @@ def get_movie_info(top_category, url, timestamp):
         movie_info["summary"] = summary[0].text.strip()
 
         imdb_rating = movie.find('div', class_="ratings-imdb-rating")
+        # setting default case to None
         movie_info["imdb_rating"] = None
         if imdb_rating is not None:
             movie_info["imdb_rating"] = imdb_rating['data-value']
 
         metascore_rating = movie.find('span', class_="metascore")
+        # setting default case to None
         movie_info["metascore_rating"] = None
         if metascore_rating is not None:
             movie_info["metascore_rating"] = metascore_rating.text.strip()
 
+        # appending to movie_info list if not None
         if movie_info is not None:
             data.append(movies.Movie(movie_info, timestamp))
 
