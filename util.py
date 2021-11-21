@@ -35,8 +35,9 @@ def run_crud_operation(conn_str, stmt):
     try:
         engine = create_engine(conn_str)
         conn = engine.connect()
-        conn.execute(stmt)
+        result = conn.execute(stmt)
         conn.close()
+        return result
     except exc.SQLAlchemyError as e:
         log.error("connection string: %s statement: %s Error: %s" % (conn_str, stmt, e))
         raise
