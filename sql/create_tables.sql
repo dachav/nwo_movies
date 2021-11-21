@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS movie_performance_fact (
   imdb_rating DECIMAL(2,1),
   metascore_rating INTEGER,
   num_votes INTEGER,
+  file_name VARCHAR(100),
   timestamp TIMESTAMP,
   CONSTRAINT pk PRIMARY KEY (day_key,movie_key)
 );
@@ -57,5 +58,6 @@ CREATE TABLE IF NOT EXISTS movie_performance_staging (
   imdb_rating DECIMAL(2,1),
   metascore_rating INTEGER,
   num_votes INTEGER,
+  file_name VARCHAR(100),
   timestamp TIMESTAMP
 );

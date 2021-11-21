@@ -15,6 +15,7 @@ def read_all_csv_to_df(path):
 
     for filename in all_files:
         df = pd.read_csv(filename, index_col=None, header=0)
+        df['file_name'] = os.path.basename(filename)
         li.append(df)
 
     return pd.concat(li, axis=0, ignore_index=True)

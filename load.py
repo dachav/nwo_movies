@@ -151,6 +151,7 @@ def populate_movie_fact_table(conn_str, movie_keys):
             imdb_rating,
             metascore_rating,
             num_votes,
+            file_name,
             timestamp
         FROM
             movie_performance_staging

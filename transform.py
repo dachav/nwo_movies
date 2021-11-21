@@ -57,7 +57,7 @@ class MoviePerformanceStaging(object):
         # combine movies that were in different top 50 genre lists
         self.staging_df = df.groupby(['title', 'url', 'release_year', 'mpaa_rating', 'runtime_minutes',
                                       'genres', 'imdb_rating', 'metascore_rating', 'actors', 'directors',
-                                      'summary', 'num_votes', 'gross_earnings',
+                                      'summary', 'num_votes', 'gross_earnings', 'file_name',
                                       'timestamp'], dropna=False).agg({'imdb_rank': ','.join}).reset_index()
 
     def transform_time_dimensions(self):
