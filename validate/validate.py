@@ -67,7 +67,9 @@ def get_num_delta_records(file_names_str):
                         num_votes
                     FROM
                         movie_performance_staging
-                    EXCEPT
+                    WHERE
+                        movie_key IS NOT NULL
+                    EXCEPT 
                     SELECT DISTINCT 
                         movie_key,
                         imdb_rank,
