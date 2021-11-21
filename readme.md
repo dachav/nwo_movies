@@ -8,6 +8,7 @@ This is a python powered application that scrapes the top 50 English movies per 
 * [Technologies](#technologies)
 * [Setup](#setup)
 * [Data](#data)
+* [Validation](#validation)
 
 ## General info
 This project is for consideration for employment with nwo.ai
@@ -40,11 +41,18 @@ $ python main.py
 
 ## Data
 
-After running the code, you can view data with Adminer at http://localhost:8080 or use another software. Login with the following credentials:
+After running main, you can view data with Adminer at http://localhost:8080 or use another software. Login with the following credentials:
 ```
 System : PostgreSQL
 Server : postgres (localhost:5438)
 Username : root
 Password : changeme
 Database : moviesdb
+```
+
+## Validation
+
+After running the main, you can validate the ingested that with validate.py. Run the following command in the base directory:
+```
+$ python ./validate/validate.py
 ```
